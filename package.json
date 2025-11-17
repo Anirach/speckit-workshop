@@ -1,0 +1,43 @@
+{
+  "name": "photo-album-organizer",
+  "version": "0.1.0",
+  "description": "Desktop photo album organizer with automatic date-based organization",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "playwright test",
+    "test:contract": "web-test-runner",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:init": "node scripts/db-init.js",
+    "db:reset": "node scripts/db-reset.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "exifreader": "^4.23.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@vitest/coverage-v8": "^2.1.5",
+    "@web/test-runner": "^0.19.0",
+    "@web/test-runner-playwright": "^0.11.0",
+    "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.6.0",
+    "prettier": "^3.3.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
