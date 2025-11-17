@@ -1,126 +1,203 @@
 /**
  * File System Operations
- * Copy, delete, hash, and directory management
+ * Browser-compatible File API for photo management
+ * 
+ * NOTE: This uses File API and IndexedDB for browser compatibility.
+ * For production desktop app, use Tauri file system APIs.
  */
 
-import {
-  copyFileSync,
-  unlinkSync,
-  existsSync,
-  statSync,
-  mkdirSync,
-  readdirSync
-} from 'fs'
-import { join, basename } from 'path'
-
 /**
- * Copy photo file to storage
- * @param {string} sourcePath - Absolute path to user-selected photo
- * @param {string} storageDir - Base storage directory (storage/photos)
+ * Copy photo file to storage (browser-compatible using IndexedDB)
+ * @param {File} sourceFile - User-selected photo File object
+ * @param {string} storageDir - Base storage directory (not used in browser)
  * @param {string} yearMonth - Year-month folder (e.g., "2024-01")
  * @returns {Promise<Object>} File info object
  */
-export async function copyPhotoToStorage(sourcePath, storageDir, yearMonth) {
-  if (!existsSync(sourcePath)) {
-    throw new Error(`File not found: ${sourcePath}`)
+export async function copyPhotoToStorage(sourceFile, storageDir, yearMonth) {
+  if (!sourceFile || !(sourceFile instanceof File)) {
+    throw new Error('Invalid file object')
   }
 
-  // Ensure year-month directory exists
-  const targetDir = join(storageDir, yearMonth)
-  ensureDirectory(targetDir)
+  // In browser, we store file data in IndexedDB
+  const fileName = sourceFile.name
+  const mimeType = sourceFile.type || detectMimeType(fileName)
+  const fileSize = sourceFile.size
 
-  // Copy file with original filename
-  const fileName = basename(sourcePath)
-  const targetPath = join(targetDir, fileName)
+  // Generate unique file path (virtual path for browser)
+  const timestamp = Date.now()
+  const randomId = Math.random().toString(36).substring(2, 9)
+  const filePath = `storage/photos/${yearMonth}/${timestamp}_${randomId}_${fileName}`
 
-  // Handle duplicate filename (add suffix)
-  let finalPath = targetPath
-  let counter = 1
-  while (existsSync(finalPath)) {
-    const nameWithoutExt = fileName.replace(/\.[^.]+$/, '')
-    const ext = fileName.match(/\.[^.]+$/)?.[0] || ''
-    finalPath = join(targetDir, `${nameWithoutExt}_${counter}${ext}`)
-    counter++
-  }
+  // Read file as ArrayBuffer to store in IndexedDB
+  const arrayBuffer = await sourceFile.arrayBuffer()
 
-  copyFileSync(sourcePath, finalPath)
-
-  // Get file info
-  const stats = statSync(finalPath)
-  const mimeType = detectMimeType(fileName)
+  // Store file data in IndexedDB
+  await storeFileData(filePath, arrayBuffer, mimeType)
 
   return {
-    filePath: finalPath,
-    fileName: basename(finalPath),
-    fileSize: stats.size,
+    filePath,
+    fileName,
+    fileSize,
     mimeType
   }
 }
 
 /**
- * Delete photo file from storage
- * @param {string} filePath - Absolute path to photo
+ * Store file data in IndexedDB
+ * @param {string} filePath - Virtual file path
+ * @param {ArrayBuffer} data - File data
+ * @param {string} mimeType - MIME type
  */
-export function deletePhoto(filePath) {
-  if (!existsSync(filePath)) {
-    console.warn(`File not found, skipping deletion: ${filePath}`)
-    return
-  }
+async function storeFileData(filePath, data, mimeType) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('PhotoFiles', 1)
 
-  unlinkSync(filePath)
+    request.onerror = () => reject(request.error)
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result
+      if (!db.objectStoreNames.contains('files')) {
+        db.createObjectStore('files', { keyPath: 'path' })
+      }
+    }
+
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction('files', 'readwrite')
+      const store = tx.objectStore('files')
+      
+      const fileRecord = {
+        path: filePath,
+        data,
+        mimeType,
+        createdAt: new Date().toISOString()
+      }
+
+      const putRequest = store.put(fileRecord)
+      
+      putRequest.onsuccess = () => resolve()
+      putRequest.onerror = () => reject(putRequest.error)
+    }
+  })
+}
+
+/**
+ * Get file data from IndexedDB
+ * @param {string} filePath - Virtual file path
+ * @returns {Promise<Object>} File data object
+ */
+export async function getFileData(filePath) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('PhotoFiles', 1)
+
+    request.onerror = () => reject(request.error)
+
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction('files', 'readonly')
+      const store = tx.objectStore('files')
+      const getRequest = store.get(filePath)
+
+      getRequest.onsuccess = () => {
+        resolve(getRequest.result || null)
+      }
+      getRequest.onerror = () => reject(getRequest.error)
+    }
+  })
+}
+
+/**
+ * Delete photo file from storage
+ * @param {string} filePath - Virtual file path
+ */
+export async function deletePhoto(filePath) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('PhotoFiles', 1)
+
+    request.onerror = () => reject(request.error)
+
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction('files', 'readwrite')
+      const store = tx.objectStore('files')
+      const deleteRequest = store.delete(filePath)
+
+      deleteRequest.onsuccess = () => resolve()
+      deleteRequest.onerror = () => reject(deleteRequest.error)
+    }
+  })
 }
 
 /**
  * Delete thumbnail file
- * @param {string} thumbnailPath - Absolute path to thumbnail
+ * @param {string} thumbnailPath - Virtual thumbnail path
  */
-export function deleteThumbnail(thumbnailPath) {
-  if (existsSync(thumbnailPath)) {
-    unlinkSync(thumbnailPath)
+export async function deleteThumbnail(thumbnailPath) {
+  try {
+    await deletePhoto(thumbnailPath)
+  } catch (error) {
+    console.warn(`Failed to delete thumbnail: ${thumbnailPath}`, error)
   }
 }
 
 /**
  * Check if file exists
- * @param {string} filePath - Absolute path to file
- * @returns {boolean} True if exists
+ * @param {string} filePath - Virtual file path
+ * @returns {Promise<boolean>} True if exists
  */
-export function fileExists(filePath) {
-  return existsSync(filePath)
+export async function fileExists(filePath) {
+  try {
+    const fileData = await getFileData(filePath)
+    return fileData !== null
+  } catch (error) {
+    return false
+  }
 }
 
 /**
- * Ensure directory exists (create if needed)
- * @param {string} dirPath - Absolute path to directory
+ * Ensure directory exists (no-op in browser)
+ * @param {string} dirPath - Directory path (ignored in browser)
  */
 export function ensureDirectory(dirPath) {
-  if (!existsSync(dirPath)) {
-    mkdirSync(dirPath, { recursive: true })
-  }
+  // No-op in browser - directories are virtual
+  return Promise.resolve()
 }
 
 /**
- * List files in directory matching pattern
- * @param {string} dirPath - Absolute path to directory
- * @param {string} pattern - Optional glob pattern (e.g., "*.jpg")
- * @returns {string[]} Array of absolute file paths
+ * List files in directory (browser-compatible)
+ * @param {string} dirPath - Virtual directory path
+ * @param {string} pattern - Optional pattern (e.g., "*.jpg")
+ * @returns {Promise<string[]>} Array of file paths
  */
-export function listFiles(dirPath, pattern = null) {
-  if (!existsSync(dirPath)) {
-    throw new Error(`Directory not found: ${dirPath}`)
-  }
+export async function listFiles(dirPath, pattern = null) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('PhotoFiles', 1)
 
-  const files = readdirSync(dirPath)
+    request.onerror = () => reject(request.error)
 
-  let filteredFiles = files
-  if (pattern) {
-    const regex = new RegExp(
-      pattern.replace(/\./g, '\\.').replace(/\*/g, '.*')
-    )
-    filteredFiles = files.filter((f) => regex.test(f))
-  }
+    request.onsuccess = () => {
+      const db = request.result
+      const tx = db.transaction('files', 'readonly')
+      const store = tx.objectStore('files')
+      const getAllRequest = store.getAllKeys()
 
-  return filteredFiles.map((f) => join(dirPath, f))
+      getAllRequest.onsuccess = () => {
+        let files = getAllRequest.result
+        
+        // Filter by directory
+        files = files.filter(path => path.startsWith(dirPath))
+
+        // Filter by pattern if provided
+        if (pattern) {
+          const regex = new RegExp(pattern.replace(/\./g, '\\.').replace(/\*/g, '.*'))
+          files = files.filter(path => regex.test(path))
+        }
+
+        resolve(files)
+      }
+      getAllRequest.onerror = () => reject(getAllRequest.error)
+    }
+  })
 }
 
 /**
@@ -136,7 +213,8 @@ function detectMimeType(fileName) {
     '.jpeg': 'image/jpeg',
     '.png': 'image/png',
     '.heic': 'image/heic',
-    '.heif': 'image/heif'
+    '.heif': 'image/heif',
+    '.webp': 'image/webp'
   }
 
   return mimeTypes[ext] || 'application/octet-stream'
@@ -149,11 +227,6 @@ function detectMimeType(fileName) {
  */
 export function isSupportedFormat(fileName) {
   const mimeType = detectMimeType(fileName)
-  const supported = [
-    'image/jpeg',
-    'image/png',
-    'image/heic',
-    'image/heif'
-  ]
+  const supported = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp']
   return supported.includes(mimeType)
 }

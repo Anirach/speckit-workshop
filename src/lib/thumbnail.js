@@ -27,7 +27,7 @@ export async function generateThumbnailBlob(photoFile, size = 300) {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
       canvas.toBlob(
-        (blob) => {
+        blob => {
           URL.revokeObjectURL(img.src)
           resolve(blob)
         },
@@ -54,12 +54,7 @@ export async function generateThumbnailBlob(photoFile, size = 300) {
  * @param {number} size - Thumbnail size (default 300px)
  * @returns {Promise<string>} Path to generated thumbnail
  */
-export async function generateThumbnail(
-  photoPath,
-  outputDir,
-  hash,
-  size = 300
-) {
+export async function generateThumbnail(photoPath, outputDir, hash, size = 300) {
   // This is a placeholder for Node.js backend implementation
   // In browser context, use generateThumbnailBlob instead
   throw new Error(

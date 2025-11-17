@@ -15,7 +15,7 @@
 - Q: What dimensions should thumbnail previews use in the tile-based interface? → A: 300x300 pixels (medium size, balanced)
 - Q: How should the system handle timezone differences in photo EXIF date/time metadata? → A: Preserve original timezone from EXIF data
 
-## User Scenarios & Testing *(mandatory)*
+## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - View and Browse Photo Albums (Priority: P1)
 
@@ -93,14 +93,14 @@ Users can delete individual photos or entire albums to manage their photo librar
 
 **Note**: The following edge cases are identified but marked as out-of-scope for MVP (Phase 1-6). They may be addressed in future iterations:
 
-- What happens when a user tries to drag an album while another drag operation is in progress? *(Future: Prevent concurrent drags)*
-- How does the system handle photos with corrupted or missing metadata? *(Covered: FR-014 uses file modification date)*
-- How does the interface handle albums with thousands of photos (performance/pagination)? *(Covered: T119 implements virtual scrolling)*
-- What happens when a user imports photos while viewing an album that will receive new photos? *(Future: Real-time album updates)*
-- What happens when storage quota is exceeded during photo import? *(Future: Pre-flight storage check)*
-- How does the system handle very large individual photo files (>50MB)? *(Future: File size warnings/limits)*
+- What happens when a user tries to drag an album while another drag operation is in progress? _(Future: Prevent concurrent drags)_
+- How does the system handle photos with corrupted or missing metadata? _(Covered: FR-014 uses file modification date)_
+- How does the interface handle albums with thousands of photos (performance/pagination)? _(Covered: T119 implements virtual scrolling)_
+- What happens when a user imports photos while viewing an album that will receive new photos? _(Future: Real-time album updates)_
+- What happens when storage quota is exceeded during photo import? _(Future: Pre-flight storage check)_
+- How does the system handle very large individual photo files (>50MB)? _(Future: File size warnings/limits)_
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 ### Functional Requirements
 
@@ -134,12 +134,14 @@ Users can delete individual photos or entire albums to manage their photo librar
 ### Non-Functional Requirements (Constitution-Aligned)
 
 **Code Quality (Principle I)**:
+
 - Code MUST follow language-specific style guide (e.g., ESLint for JavaScript/TypeScript, Prettier for formatting)
 - Functions exceeding 50 lines MUST be justified (especially UI components)
 - Error conditions MUST be explicitly handled (file read errors, missing metadata, storage failures)
 - Photo processing logic MUST be modular and reusable
 
 **Testing (Principle II)**:
+
 - Test coverage MUST be ≥80% for all new code
 - Unit tests for album grouping logic, drag-drop state management, metadata extraction
 - Integration tests for photo import workflow, album CRUD operations, UI navigation flows
@@ -148,6 +150,7 @@ Users can delete individual photos or entire albums to manage their photo librar
 - Integration tests MUST run in <5 minutes
 
 **User Experience (Principle III)**:
+
 - Error messages MUST be actionable (e.g., "Could not import photo.jpg: unsupported format. Supported formats: JPEG, PNG, HEIC, WebP")
 - Drag and drop MUST provide visual feedback (<200ms response to drag start)
 - Photo tiles MUST load progressively (show placeholders immediately, then thumbnails)
@@ -156,6 +159,7 @@ Users can delete individual photos or entire albums to manage their photo librar
 - Accessibility: Keyboard navigation for album browsing, ARIA labels for drag-drop, alt text for images
 
 **Performance (Principle IV)**:
+
 - Album list rendering: First paint <1.5 seconds for up to 100 albums
 - Photo tile rendering: Load and display 50 thumbnails in <2 seconds
 - Drag and drop: <50ms response time for smooth 60fps animation
@@ -164,7 +168,7 @@ Users can delete individual photos or entire albums to manage their photo librar
 - Thumbnail cache: Reduce redundant processing for previously viewed photos
 - Support libraries with 10,000+ photos without UI degradation
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **Album**: Represents a collection of photos grouped by date. Attributes include: album name/date label (e.g., "November 2025"), creation date, custom sort order (for manual reordering), photo count, cover photo (first or representative photo for preview)
 
@@ -174,7 +178,7 @@ Users can delete individual photos or entire albums to manage their photo librar
 
 - **ImportSession**: Represents a batch photo import operation. Attributes include: import date/time, number of photos processed, number of photos succeeded, number of photos failed, error details for failed imports
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
@@ -202,7 +206,7 @@ Since the user description didn't specify certain technical details, the followi
 7. **Deletion Behavior**: Deletion permanently removes original photo files from disk after user confirmation (not recoverable)
 8. **Album Naming**: System-generated based on date; users cannot manually rename albums (enforces date-based organization)
 9. **Photo Metadata**: Application reads but doesn't modify original photo files or EXIF data
-11. **Photo Ordering**: Photos within albums are sorted by date/time taken in descending order (newest first)
-12. **Duplicate Detection**: System uses file hash (content-based) comparison to detect duplicates during import; identical files are skipped regardless of filename
-13. **Thumbnail Dimensions**: Generated thumbnails are 300x300 pixels in JPEG format at 85% quality, balancing visual quality with performance and storage efficiency
-14. **Timezone Handling**: Original timezone information from EXIF data is preserved to maintain accurate photo chronology across different locations
+10. **Photo Ordering**: Photos within albums are sorted by date/time taken in descending order (newest first)
+11. **Duplicate Detection**: System uses file hash (content-based) comparison to detect duplicates during import; identical files are skipped regardless of filename
+12. **Thumbnail Dimensions**: Generated thumbnails are 300x300 pixels in JPEG format at 85% quality, balancing visual quality with performance and storage efficiency
+13. **Timezone Handling**: Original timezone information from EXIF data is preserved to maintain accurate photo chronology across different locations

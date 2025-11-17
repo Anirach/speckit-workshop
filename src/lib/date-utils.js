@@ -3,8 +3,6 @@
  * EXIF date parsing, timezone handling, ISO8601 conversion
  */
 
-import { statSync } from 'fs'
-
 /**
  * Convert EXIF date to ISO8601 format
  * @param {string} exifDate - EXIF date string (e.g., "2024:01:15 14:30:22")
@@ -112,10 +110,11 @@ export function formatDisplayDate(isoDate) {
 
 /**
  * Get file modification time as ISO8601 (fallback for photos without EXIF)
- * @param {string} filePath - Absolute path to file
+ * @param {File} file - Browser File object
  * @returns {string} ISO8601 timestamp
  */
-export function getFileModificationDate(filePath) {
-  const stats = statSync(filePath)
-  return stats.mtime.toISOString()
+export function getFileModificationDate(file) {
+  // Use file's lastModified timestamp
+  const date = new Date(file.lastModified)
+  return date.toISOString()
 }

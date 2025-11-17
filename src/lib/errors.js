@@ -7,6 +7,16 @@
  * Custom error classes for different error types
  */
 
+export class AppError extends Error {
+  constructor(message, code = 'UNKNOWN_ERROR', originalError = null) {
+    super(message)
+    this.name = 'AppError'
+    this.code = code
+    this.originalError = originalError
+    this.userMessage = message
+  }
+}
+
 export class FileNotFoundError extends Error {
   constructor(filePath) {
     super(`File not found: ${filePath}`)
@@ -19,7 +29,8 @@ export class UnsupportedFormatError extends Error {
   constructor(fileName) {
     super(`Unsupported file format: ${fileName}`)
     this.name = 'UnsupportedFormatError'
-    this.userMessage = 'This file format is not supported. Supported formats: JPEG, PNG, HEIC, HEIF.'
+    this.userMessage =
+      'This file format is not supported. Supported formats: JPEG, PNG, HEIC, HEIF.'
   }
 }
 
@@ -129,4 +140,58 @@ export function withErrorHandling(fn, onError) {
       throw error
     }
   }
+}
+
+/**
+ * Show error message to user (UI notification)
+ * @param {string|Error} error - Error message or Error object
+ */
+export function showError(error) {
+  const message = typeof error === 'string' ? error : formatErrorMessage(error)
+  
+  // Log to console for debugging
+  if (typeof error === 'object') {
+    logError(error)
+  }
+  
+  // Create toast notification
+  const toast = document.createElement('div')
+  toast.className = 'error-toast'
+  toast.textContent = message
+  toast.setAttribute('role', 'alert')
+  toast.setAttribute('aria-live', 'assertive')
+  
+  document.body.appendChild(toast)
+  
+  // Animate in
+  setTimeout(() => toast.classList.add('show'), 10)
+  
+  // Auto-dismiss after 5 seconds
+  setTimeout(() => {
+    toast.classList.remove('show')
+    setTimeout(() => toast.remove(), 300)
+  }, 5000)
+}
+
+/**
+ * Show success message to user (UI notification)
+ * @param {string} message - Success message
+ */
+export function showSuccess(message) {
+  const toast = document.createElement('div')
+  toast.className = 'success-toast'
+  toast.textContent = message
+  toast.setAttribute('role', 'status')
+  toast.setAttribute('aria-live', 'polite')
+  
+  document.body.appendChild(toast)
+  
+  // Animate in
+  setTimeout(() => toast.classList.add('show'), 10)
+  
+  // Auto-dismiss after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('show')
+    setTimeout(() => toast.remove(), 300)
+  }, 3000)
 }

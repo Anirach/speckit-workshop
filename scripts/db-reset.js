@@ -25,20 +25,13 @@ try {
 
   // Get all tables
   const tables = db
-    .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-    )
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
     .all()
 
-  console.log(
-    `Found ${tables.length} tables:`,
-    tables.map((t) => t.name).join(', ')
-  )
+  console.log(`Found ${tables.length} tables:`, tables.map(t => t.name).join(', '))
 
   // Drop all triggers first
-  const triggers = db
-    .prepare("SELECT name FROM sqlite_master WHERE type='trigger'")
-    .all()
+  const triggers = db.prepare("SELECT name FROM sqlite_master WHERE type='trigger'").all()
   for (const trigger of triggers) {
     db.exec(`DROP TRIGGER IF EXISTS ${trigger.name}`)
   }

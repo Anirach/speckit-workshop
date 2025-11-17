@@ -1,154 +1,337 @@
 /* Album Grid Styles */
 
-.album-list-container {
-  padding: var(--spacing-xl);
+#album-list-container {
+  padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-.album-list-header {
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0;
 }
 
 .album-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-2xl);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
 }
 
 .album-card {
-  background: var(--color-surface);
-  border-radius: var(--border-radius-lg);
+  background: #ffffff;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: var(--shadow-md);
-  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   cursor: pointer;
   position: relative;
+  user-select: none; /* Prevent text selection during drag */
 }
 
 .album-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .album-card:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid #4caf50;
   outline-offset: 2px;
 }
 
+/* Drag-and-drop states */
 .album-card.dragging {
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: grabbing;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transform: scale(1.02);
 }
 
 .album-card.drag-over {
-  border: 2px dashed var(--color-primary);
+  border: 2px dashed #4caf50;
+  background: rgba(76, 175, 80, 0.05);
 }
 
-.album-thumbnail {
-  width: 100%;
-  aspect-ratio: 4/3;
-  object-fit: cover;
-  background-color: var(--color-border);
-  display: block;
+/* Placeholder for drag drop */
+.album-placeholder {
+  border: 2px dashed #ccc;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
-.album-info {
-  padding: var(--spacing-md);
-}
-
-.album-title {
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-xs);
-}
-
-.album-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.album-count {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.album-date {
-  font-size: var(--font-size-sm);
-}
-
-.album-actions {
+/* Drop zone indicator */
+.album-card::before {
+  content: '';
   position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
+  top: 0;
+  left: -4px;
+  width: 4px;
+  height: 100%;
+  background: #4caf50;
   opacity: 0;
-  transition: opacity var(--transition-fast);
+  transition: opacity 0.2s;
+  z-index: 10;
 }
 
-.album-card:hover .album-actions,
-.album-card:focus-within .album-actions {
+.album-card.drop-target-before::before {
   opacity: 1;
 }
 
-.album-delete-btn {
-  background-color: var(--color-danger);
-  color: white;
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius);
+.album-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 4px;
+  height: 100%;
+  background: #4caf50;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.album-card.drop-target-after::after {
+  opacity: 1;
+}
+
+.album-cover {
+  aspect-ratio: 1;
+  background: #f0f0f0;
+  overflow: hidden;
+  position: relative;
+}
+
+.album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none; /* Prevent image from blocking drag events */
+}
+
+.album-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-md);
+  color: #999;
+}
+
+.album-info {
+  padding: 12px;
+  background: white;
+}
+
+.album-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: #1a1a1a;
+}
+
+.album-count {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.album-date-range {
+  font-size: 12px;
+  color: #999;
+  margin: 4px 0 0 0;
+}
+
+/* Album delete button */
+.album-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(244, 67, 54, 0.9);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    background 0.2s,
+    transform 0.2s;
+  z-index: 10;
+}
+
+.album-card:hover .album-delete-btn {
+  opacity: 1;
 }
 
 .album-delete-btn:hover {
-  background-color: var(--color-danger-hover);
+  background: rgba(211, 47, 47, 1);
+  transform: scale(1.1);
+}
+
+.album-delete-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.album-delete-btn svg {
+  stroke-width: 2;
 }
 
 /* Empty state */
-.album-empty-state {
+.empty-state {
+  grid-column: 1 / -1;
   text-align: center;
-  padding: var(--spacing-2xl);
-  background: var(--color-surface);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
+  padding: 64px 32px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 2px dashed #e0e0e0;
 }
 
-.album-empty-state h2 {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-md);
+.empty-icon {
+  color: #ccc;
+  margin-bottom: 24px;
 }
 
-.album-empty-state p {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-lg);
+.empty-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 12px 0;
 }
 
-/* Drop placeholder */
-.drop-placeholder {
-  border: 2px dashed var(--color-primary);
-  background-color: rgba(37, 99, 235, 0.05);
-  border-radius: var(--border-radius-lg);
-  min-height: 200px;
+.empty-description {
+  font-size: 16px;
+  color: #999;
+  margin: 0 0 24px 0;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.import-button,
+.btn-primary {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.import-button:hover,
+.btn-primary:hover {
+  background: #45a049;
+}
+
+.import-button svg,
+.btn-primary svg {
+  stroke-width: 2;
+}
+
+/* Floating import button (for when albums exist) */
+.floating-import-button {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 16px 24px;
+  border-radius: 28px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.floating-import-button:hover {
+  background: #45a049;
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+  transform: translateY(-2px);
+}
+
+.floating-import-button svg {
+  stroke-width: 2.5;
+}
+
+.btn-secondary {
+  background: #e0e0e0;
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #d0d0d0;
+}
+
+.error-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 32px;
+  background: #fff3f3;
+  border-radius: 8px;
+  border: 2px solid #ffcdd2;
+}
+
+.error-state p {
+  color: #c62828;
+  font-size: 16px;
+  margin: 0 0 16px 0;
 }
 
 /* Responsive design */
 @media (max-width: 768px) {
   .album-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--spacing-md);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
   }
-  
-  .album-list-container {
-    padding: var(--spacing-md);
+
+  #album-list-container {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
   }
 }

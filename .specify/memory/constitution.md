@@ -12,16 +12,16 @@
     - Development Workflow
     - Governance (with amendment process and compliance review)
   Removed Sections: None (initial constitution)
-  
+
   Templates Status:
     ✅ plan-template.md - Constitution Check section updated with all 4 principles
     ✅ spec-template.md - Added Non-Functional Requirements section aligned with all principles
     ✅ tasks-template.md - Updated all phases with constitution alignment notes and quality gates
     ✅ checklist-template.md - Compatible with quality gates (no changes needed)
     ✅ agent-file-template.md - No updates required (auto-generated file)
-  
+
   Follow-up TODOs: None - All templates synchronized successfully
-  
+
   Rationale for Version 1.0.0:
     - Initial constitution establishing core governance framework
     - Defines four foundational principles for code quality, testing, UX, and performance

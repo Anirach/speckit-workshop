@@ -10,19 +10,19 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['better-sqlite3', 'exifreader']
+          vendor: ['exifreader']
         }
       }
     }
   },
   server: {
-    port: 3000,
+    port: 3450,
     strictPort: false,
     hmr: {
       overlay: true
     }
   },
   optimizeDeps: {
-    exclude: ['better-sqlite3']
+    include: ['exifreader']
   }
 })

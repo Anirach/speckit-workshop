@@ -1,119 +1,191 @@
 /**
  * Database Connection Manager
- * Provides singleton connection to SQLite database with auto-close
+ * API client for SQLite backend
  */
 
-import Database from 'better-sqlite3'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { existsSync } from 'fs'
+const API_BASE = 'http://localhost:3451/api'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const projectRoot = join(__dirname, '../..')
-const dbPath = join(projectRoot, 'storage/metadata.db')
-
-let db = null
+let connectionCount = 0
+let lastActivity = Date.now()
 
 /**
- * Get database connection (singleton)
- * @returns {Database} SQLite database instance
+ * Make API request to backend
  */
-export function getDatabase() {
-  if (db) {
-    return db
-  }
-
-  if (!existsSync(dbPath)) {
-    throw new Error(
-      'Database not found. Run "npm run db:init" to initialize the database.'
-    )
-  }
-
-  db = new Database(dbPath, {
-    verbose: process.env.NODE_ENV === 'development' ? console.log : null
+async function apiRequest(endpoint, options = {}) {
+  lastActivity = Date.now()
+  
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
+    },
+    ...options
   })
 
-  // Enable foreign keys
-  db.pragma('foreign_keys = ON')
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'API request failed' }))
+    throw new Error(error.error || 'API request failed')
+  }
 
-  // Optimize for performance
-  db.pragma('journal_mode = WAL') // Write-Ahead Logging
-  db.pragma('synchronous = NORMAL')
-  db.pragma('cache_size = 10000') // ~40MB cache
-
-  console.log('✓ Database connection established')
-
-  return db
+  return response.json()
 }
 
 /**
- * Close database connection
+ * Get database connection (compatibility function)
+ * @returns {Promise<Object>} Mock database object
+ */
+export async function getDatabase() {
+  connectionCount++
+  console.log(`✓ Database API connected (connection #${connectionCount})`)
+  return { connected: true }
+}
+
+/**
+ * Close database connection (no-op for API)
  */
 export function closeDatabase() {
-  if (db) {
-    db.close()
-    db = null
-    console.log('✓ Database connection closed')
+  console.log('✓ Database API connection closed')
+}
+
+/**
+ * Run a transaction (executes function directly for API)
+ * @param {Function} fn - Async function to execute
+ * @returns {Promise<*>} Result of the transaction function
+ */
+export async function transaction(fn) {
+  return fn()
+}
+
+/**
+ * Execute a query that returns multiple rows
+ * @param {string} storeName - Table name
+ * @param {Object} options - Query options (for compatibility)
+ * @returns {Promise<Array>} Query results
+ */
+export async function query(storeName, options = {}) {
+  lastActivity = Date.now()
+
+  // Map store names to API endpoints
+  const endpoints = {
+    'Album': '/albums',
+    'Photo': '/photos',
+    'AlbumOrder': '/album-orders',
+    'ImportSession': '/import-sessions'
   }
-}
 
-/**
- * Auto-close database on process exit
- */
-process.on('exit', () => {
-  closeDatabase()
-})
+  const endpoint = endpoints[storeName]
+  if (!endpoint) {
+    throw new Error(`Unknown store: ${storeName}`)
+  }
 
-process.on('SIGINT', () => {
-  closeDatabase()
-  process.exit(0)
-})
+  const results = await apiRequest(endpoint)
 
-process.on('SIGTERM', () => {
-  closeDatabase()
-  process.exit(0)
-})
+  // Apply filters if provided (for compatibility with old code)
+  let filtered = results
+  if (options.where) {
+    filtered = results.filter(options.where)
+  }
 
-/**
- * Run a transaction
- * @param {Function} fn - Function to execute within transaction
- * @returns {*} Result of the transaction function
- */
-export function transaction(fn) {
-  const database = getDatabase()
-  const txn = database.transaction(fn)
-  return txn()
-}
+  if (options.orderBy) {
+    filtered.sort(options.orderBy)
+  }
 
-/**
- * Execute a prepared statement
- * @param {string} sql - SQL query
- * @param {Array} params - Query parameters
- * @returns {Object} Statement result
- */
-export function query(sql, params = []) {
-  const database = getDatabase()
-  return database.prepare(sql).all(params)
+  if (options.limit) {
+    filtered = filtered.slice(0, options.limit)
+  }
+
+  return filtered
 }
 
 /**
  * Execute a single-row query
- * @param {string} sql - SQL query
- * @param {Array} params - Query parameters
- * @returns {Object|null} Single row or null
+ * @param {string} storeName - Table name
+ * @param {number|Object} key - Primary key or query options
+ * @returns {Promise<Object|null>} Single row or null
  */
-export function queryOne(sql, params = []) {
-  const database = getDatabase()
-  return database.prepare(sql).get(params)
+export async function queryOne(storeName, key) {
+  lastActivity = Date.now()
+
+  const endpoints = {
+    'Album': '/albums',
+    'Photo': '/photos',
+    'AlbumOrder': '/album-orders',
+    'ImportSession': '/import-sessions'
+  }
+
+  const endpoint = endpoints[storeName]
+  if (!endpoint) {
+    throw new Error(`Unknown store: ${storeName}`)
+  }
+
+  if (typeof key === 'number') {
+    try {
+      return await apiRequest(`${endpoint}/${key}`)
+    } catch (error) {
+      return null
+    }
+  }
+
+  // Query with filter
+  const results = await apiRequest(endpoint)
+  if (key.where) {
+    return results.filter(key.where)[0] || null
+  }
+
+  return results[0] || null
 }
 
 /**
- * Execute an insert/update/delete statement
- * @param {string} sql - SQL statement
- * @param {Array} params - Statement parameters
- * @returns {Object} Statement info (changes, lastInsertRowid)
+ * Execute an insert/update/delete operation
+ * @param {string} storeName - Table name
+ * @param {string} operation - 'add', 'put', or 'delete'
+ * @param {Object|number} data - Data to insert/update or key to delete
+ * @returns {Promise<Object>} Operation info
  */
-export function execute(sql, params = []) {
-  const database = getDatabase()
-  return database.prepare(sql).run(params)
+export async function execute(storeName, operation, data) {
+  lastActivity = Date.now()
+
+  const endpoints = {
+    'Album': '/albums',
+    'Photo': '/photos',
+    'AlbumOrder': '/album-orders',
+    'ImportSession': '/import-sessions'
+  }
+
+  const endpoint = endpoints[storeName]
+  if (!endpoint) {
+    throw new Error(`Unknown store: ${storeName}`)
+  }
+
+  if (operation === 'delete') {
+    await apiRequest(`${endpoint}/${data}`, { method: 'DELETE' })
+    return { changes: 1 }
+  } else if (operation === 'add') {
+    const result = await apiRequest(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+    return { changes: 1, lastInsertRowid: result.id }
+  } else if (operation === 'put') {
+    const id = data.id || data.album_id
+    const result = await apiRequest(`${endpoint}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+    return { changes: 1, lastInsertRowid: result.id }
+  }
+}
+
+/**
+ * Get connection statistics
+ * @returns {Object} Connection stats
+ */
+export function getConnectionStats() {
+  return {
+    isConnected: true,
+    connectionCount,
+    lastActivity: new Date(lastActivity).toISOString(),
+    inactiveTime: Date.now() - lastActivity,
+    dbName: 'SQLite via API (http://localhost:3451)'
+  }
 }

@@ -1,47 +1,40 @@
 /**
  * File Hash Calculation
- * SHA-256 hashing for duplicate detection
+ * Browser-compatible SHA-256 hashing for duplicate detection
  */
-
-import { createHash } from 'crypto'
-import { createReadStream } from 'fs'
 
 /**
  * Calculate SHA-256 hash of a file
- * @param {string} filePath - Absolute path to file
+ * @param {File} file - Browser File object
  * @returns {Promise<string>} 64-character hex hash
  */
-export async function calculateFileHash(filePath) {
-  return new Promise((resolve, reject) => {
-    const hash = createHash('sha256')
-    const stream = createReadStream(filePath)
-
-    stream.on('data', (chunk) => {
-      hash.update(chunk)
-    })
-
-    stream.on('end', () => {
-      const hashHex = hash.digest('hex')
-      resolve(hashHex)
-    })
-
-    stream.on('error', (error) => {
-      reject(
-        new Error(`Failed to calculate hash for ${filePath}: ${error.message}`)
-      )
-    })
-  })
+export async function calculateFileHash(file) {
+  try {
+    // Read file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer()
+    
+    // Calculate SHA-256 hash using Web Crypto API
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer)
+    
+    // Convert to hex string
+    const hashArray = Array.from(new Uint8Array(hashBuffer))
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    return hashHex
+  } catch (error) {
+    throw new Error(`Failed to calculate hash: ${error.message}`)
+  }
 }
 
 /**
  * Calculate hash for multiple files in parallel
- * @param {string[]} filePaths - Array of file paths
- * @returns {Promise<Map<string, string>>} Map of filePath -> hash
+ * @param {File[]} files - Array of File objects
+ * @returns {Promise<Map<string, string>>} Map of fileName -> hash
  */
-export async function calculateMultipleHashes(filePaths) {
-  const hashPromises = filePaths.map(async (path) => {
-    const hash = await calculateFileHash(path)
-    return [path, hash]
+export async function calculateMultipleHashes(files) {
+  const hashPromises = files.map(async file => {
+    const hash = await calculateFileHash(file)
+    return [file.name, hash]
   })
 
   const results = await Promise.all(hashPromises)

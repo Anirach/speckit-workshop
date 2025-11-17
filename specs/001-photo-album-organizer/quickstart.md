@@ -31,6 +31,7 @@ npm install
 ```
 
 This installs:
+
 - **Vite** 5.x (dev server and build tool)
 - **better-sqlite3** (SQLite database)
 - **exifreader** (EXIF metadata extraction)
@@ -65,11 +66,13 @@ npm run dev
 ```
 
 This starts the Vite dev server at `http://localhost:5173` with:
+
 - Hot Module Replacement (HMR) for instant updates
 - Fast refresh on file changes
 - Source maps for debugging
 
 **Expected Output**:
+
 ```
 VITE v5.0.0  ready in 234 ms
 
@@ -140,12 +143,14 @@ npm run build
 ```
 
 Generates optimized production bundle in `dist/`:
+
 - Minified JavaScript
 - Tree-shaken dependencies
 - Optimized CSS
 - Source maps (for debugging)
 
 **Expected Output**:
+
 ```
 vite v5.0.0 building for production...
 ✓ 47 modules transformed.
@@ -305,11 +310,80 @@ VITE_LAZY_LOAD_MARGIN=200px # IntersectionObserver margin
 
 ---
 
+## Keyboard Shortcuts
+
+The application supports comprehensive keyboard navigation for accessibility (WCAG 2.1 AA compliance):
+
+### Global Navigation
+
+| Shortcut      | Action                                      |
+| ------------- | ------------------------------------------- |
+| `Tab`         | Navigate to next interactive element        |
+| `Shift + Tab` | Navigate to previous interactive element    |
+| `Escape`      | Close modal/dialog or cancel current action |
+| `Enter`       | Activate focused button or link             |
+| `Space`       | Toggle checkbox or activate button          |
+
+### Album List View
+
+| Shortcut     | Action                                    |
+| ------------ | ----------------------------------------- |
+| `Arrow Keys` | Navigate between album cards              |
+| `Enter`      | Open selected album                       |
+| `Delete`     | Delete selected album (with confirmation) |
+| `Alt + ↑`    | Move selected album up in custom order    |
+| `Alt + ↓`    | Move selected album down in custom order  |
+| `i`          | Open import photos dialog                 |
+
+### Photo Grid View
+
+| Shortcut     | Action                                    |
+| ------------ | ----------------------------------------- |
+| `Arrow Keys` | Navigate between photo tiles              |
+| `Enter`      | View selected photo in full screen        |
+| `Delete`     | Delete selected photo (with confirmation) |
+| `Backspace`  | Return to album list                      |
+| `Home`       | Jump to first photo                       |
+| `End`        | Jump to last photo                        |
+
+### Drag and Drop (Album Reordering)
+
+| Shortcut           | Action                       |
+| ------------------ | ---------------------------- |
+| `Alt + Arrow Keys` | Reorder albums without mouse |
+| `Escape`           | Cancel drag operation        |
+| `Enter`            | Confirm new album position   |
+
+### Modal/Dialog
+
+| Shortcut | Action                                       |
+| -------- | -------------------------------------------- |
+| `Escape` | Close modal or cancel action                 |
+| `Enter`  | Confirm action (when confirm button focused) |
+| `Tab`    | Navigate between modal buttons               |
+
+### Import Progress
+
+| Shortcut | Action                                |
+| -------- | ------------------------------------- |
+| `Escape` | Cancel import (asks for confirmation) |
+
+**Accessibility Notes**:
+
+- All interactive elements have visible focus indicators
+- Screen readers announce album/photo counts and progress updates
+- ARIA labels provide context for icon-only buttons
+- Focus is trapped within modals until closed
+- Focus returns to triggering element after modal closes
+
+---
+
 ## Troubleshooting
 
 ### Issue: "Cannot find module 'better-sqlite3'"
 
 **Solution**:
+
 ```bash
 # Rebuild native modules
 npm rebuild better-sqlite3
@@ -318,15 +392,17 @@ npm rebuild better-sqlite3
 ### Issue: "Database is locked"
 
 **Solution**: Close all connections before opening new ones:
+
 ```javascript
 // In src/lib/database.js
-const db = new Database('storage/metadata.db');
-process.on('exit', () => db.close());
+const db = new Database('storage/metadata.db')
+process.on('exit', () => db.close())
 ```
 
 ### Issue: "Out of memory during import"
 
 **Solution**: Reduce batch size in `.env`:
+
 ```bash
 VITE_BATCH_SIZE=3  # Process fewer photos in parallel
 ```
@@ -334,6 +410,7 @@ VITE_BATCH_SIZE=3  # Process fewer photos in parallel
 ### Issue: Thumbnails not loading
 
 **Solution**: Check file permissions:
+
 ```bash
 chmod -R 755 storage/thumbnails/
 ```
@@ -341,13 +418,14 @@ chmod -R 755 storage/thumbnails/
 ### Issue: Tests timing out
 
 **Solution**: Increase timeout in test config:
+
 ```javascript
 // vitest.config.js
 export default {
   test: {
-    testTimeout: 30000, // 30 seconds
-  },
-};
+    testTimeout: 30000 // 30 seconds
+  }
+}
 ```
 
 ---
@@ -356,18 +434,19 @@ export default {
 
 Expected performance on modern hardware (2020+ laptop):
 
-| Operation | Target | Typical |
-|-----------|--------|---------|
-| **Dev server start** | <5s | 2-3s |
-| **HMR update** | <500ms | 100-200ms |
-| **Unit tests** | <30s | 15-20s |
-| **Integration tests** | <5min | 2-3min |
-| **Production build** | <10s | 5-8s |
-| **Import 100 photos** | <20s | 12-15s |
-| **Load 100 albums** | <1.5s | 0.8-1.2s |
-| **Load 50 photo tiles** | <2s | 1.2-1.8s |
+| Operation               | Target | Typical   |
+| ----------------------- | ------ | --------- |
+| **Dev server start**    | <5s    | 2-3s      |
+| **HMR update**          | <500ms | 100-200ms |
+| **Unit tests**          | <30s   | 15-20s    |
+| **Integration tests**   | <5min  | 2-3min    |
+| **Production build**    | <10s   | 5-8s      |
+| **Import 100 photos**   | <20s   | 12-15s    |
+| **Load 100 albums**     | <1.5s  | 0.8-1.2s  |
+| **Load 50 photo tiles** | <2s    | 1.2-1.8s  |
 
 If performance is significantly worse, check:
+
 1. Node.js version (18.x+ required)
 2. Disk I/O speed (SSD recommended)
 3. Available memory (≥8GB recommended)
@@ -384,6 +463,7 @@ npm run tauri:build
 ```
 
 Generates platform-specific installer in `src-tauri/target/release/bundle/`:
+
 - **macOS**: `.dmg` and `.app`
 - **Windows**: `.exe` and `.msi`
 - **Linux**: `.deb` and `.AppImage`
@@ -426,6 +506,7 @@ npm run build
 ## Support
 
 For issues or questions:
+
 1. Check troubleshooting section above
 2. Review constitution.md for development workflow
 3. Check spec.md for functional requirements

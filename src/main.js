@@ -5,6 +5,10 @@
 
 import { initNavigation, registerRoute, navigateTo } from './ui/navigation.js'
 import { handleError } from './lib/errors.js'
+import { renderAlbumList } from './ui/album-list.js'
+import { renderPhotoGrid, cleanupPhotoGrid } from './ui/photo-grid.js'
+import { getAllAlbums, getAlbumById } from './services/album-service.js'
+import { getPhotosInAlbum } from './services/photo-service.js'
 
 /**
  * Initialize application
@@ -19,10 +23,6 @@ async function init() {
     // Register routes
     registerRoute('/', handleAlbumListRoute)
     registerRoute('/album/:id', handleAlbumDetailRoute)
-
-    // Check if database exists
-    // Note: Database operations are Node.js only, so we'll need a backend API
-    // For now, just initialize UI
 
     console.log('✓ Application initialized')
   } catch (error) {
@@ -44,18 +44,22 @@ async function handleAlbumListRoute() {
     return
   }
 
-  // Render album list
+  // Render container structure
   main.innerHTML = `
     <div id="album-list-container">
       <div class="page-header">
         <h1>My Photo Albums</h1>
-        <button id="import-button" class="btn btn-primary">Import Photos</button>
+        <button id="import-button" class="btn btn-primary" aria-label="Import photos">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Import Photos
+        </button>
       </div>
-      <div id="album-list" class="album-grid" role="list" aria-label="Photo albums">
+      <div id="album-list" class="album-grid">
         <!-- Album cards will be rendered here -->
-        <div class="empty-state">
-          <p>No albums yet. Import photos to get started!</p>
-        </div>
       </div>
     </div>
   `
@@ -66,7 +70,25 @@ async function handleAlbumListRoute() {
     importButton.addEventListener('click', handleImportClick)
   }
 
-  // TODO: Load and render albums from database
+  // Load and render albums from database
+  try {
+    const albums = await getAllAlbums()
+    renderAlbumList(albums)
+  } catch (error) {
+    const userMessage = handleError(error, { context: 'Loading albums' })
+    showError(userMessage)
+
+    // Show error state in UI
+    const albumList = document.getElementById('album-list')
+    if (albumList) {
+      albumList.innerHTML = `
+        <div class="error-state">
+          <p>Failed to load albums. Please try again.</p>
+          <button class="btn btn-primary" onclick="location.reload()">Reload</button>
+        </div>
+      `
+    }
+  }
 }
 
 /**
@@ -76,7 +98,7 @@ async function handleAlbumListRoute() {
 async function handleAlbumDetailRoute(params) {
   console.log('Route: Album Detail', params)
 
-  const albumId = params.id
+  const albumId = parseInt(params.id, 10)
 
   // Clear main content
   const main = document.getElementById('main-content')
@@ -85,30 +107,45 @@ async function handleAlbumDetailRoute(params) {
     return
   }
 
-  // Render photo grid
+  // Cleanup previous photo grid observer
+  cleanupPhotoGrid()
+
+  // Render container structure (will be populated by renderPhotoGrid)
   main.innerHTML = `
-    <div id="album-detail-container">
-      <div class="page-header">
-        <button id="back-button" class="btn btn-secondary">← Back to Albums</button>
-        <h1 id="album-title">Album ${albumId}</h1>
-        <button id="delete-album-button" class="btn btn-danger">Delete Album</button>
-      </div>
-      <div id="photo-grid" class="photo-grid" role="list" aria-label="Album photos">
-        <!-- Photo tiles will be rendered here -->
-        <div class="empty-state">
-          <p>No photos in this album.</p>
-        </div>
-      </div>
+    <div id="photo-grid-container">
+      <!-- Photo grid will be rendered here -->
     </div>
   `
 
-  // Attach back button handler
-  const backButton = document.getElementById('back-button')
-  if (backButton) {
-    backButton.addEventListener('click', () => navigateTo('/'))
-  }
+  // Load album and photos from database
+  try {
+    const album = await getAlbumById(albumId)
 
-  // TODO: Load and render photos from database
+    if (!album) {
+      showError('Album not found')
+      navigateTo('/')
+      return
+    }
+
+    const photos = await getPhotosInAlbum(albumId)
+
+    // Render photo grid with album info
+    renderPhotoGrid(photos, album)
+  } catch (error) {
+    const userMessage = handleError(error, { context: 'Loading album photos' })
+    showError(userMessage)
+
+    // Show error state in UI
+    const container = document.getElementById('photo-grid-container')
+    if (container) {
+      container.innerHTML = `
+        <div class="error-state">
+          <p>Failed to load album. Please try again.</p>
+          <button class="btn btn-primary" onclick="location.reload()">Reload</button>
+        </div>
+      `
+    }
+  }
 }
 
 /**

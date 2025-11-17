@@ -1,32 +1,28 @@
 /**
  * EXIF Metadata Extraction
- * Extracts date, timezone, and camera info from photos
+ * Browser-compatible EXIF extraction from photos
  */
 
 import ExifReader from 'exifreader'
-import { readFileSync } from 'fs'
 
 /**
  * Extract metadata from photo file
- * @param {string} filePath - Absolute path to photo
+ * @param {File} file - Browser File object
  * @returns {Promise<Object>} Metadata object
  */
-export async function extractMetadata(filePath) {
+export async function extractMetadata(file) {
   try {
-    const buffer = readFileSync(filePath)
-    const tags = ExifReader.load(buffer, { expanded: true })
+    // ExifReader can work directly with File objects in the browser
+    const tags = await ExifReader.load(file, { expanded: true })
 
     // Extract date with timezone
     const dateOriginal =
-      tags.exif?.DateTimeOriginal?.description ||
-      tags.exif?.DateTime?.description
+      tags.exif?.DateTimeOriginal?.description || tags.exif?.DateTime?.description
     const timezone = tags.exif?.OffsetTimeOriginal?.description
 
     // Extract dimensions
-    const width =
-      tags.file?.['Image Width']?.value || tags.exif?.PixelXDimension?.value
-    const height =
-      tags.file?.['Image Height']?.value || tags.exif?.PixelYDimension?.value
+    const width = tags.file?.['Image Width']?.value || tags.exif?.PixelXDimension?.value
+    const height = tags.file?.['Image Height']?.value || tags.exif?.PixelYDimension?.value
 
     // Extract camera info
     const cameraModel = tags.exif?.Model?.description
@@ -40,7 +36,7 @@ export async function extractMetadata(filePath) {
     }
   } catch (error) {
     // If EXIF extraction fails, return minimal metadata
-    console.warn(`EXIF extraction failed for ${filePath}:`, error.message)
+    console.warn(`EXIF extraction failed:`, error.message)
     return {
       dateTaken: null,
       timezoneOffset: null,
@@ -53,10 +49,10 @@ export async function extractMetadata(filePath) {
 
 /**
  * Check if file has valid EXIF metadata
- * @param {string} filePath - Absolute path to photo
+ * @param {File} file - Browser File object
  * @returns {Promise<boolean>} True if EXIF exists
  */
-export async function hasExifData(filePath) {
-  const metadata = await extractMetadata(filePath)
+export async function hasExifData(file) {
+  const metadata = await extractMetadata(file)
   return metadata.dateTaken !== null
 }

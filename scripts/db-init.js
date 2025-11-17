@@ -50,14 +50,9 @@ try {
 
   // Verify tables
   const tables = db
-    .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
-    )
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
     .all()
-  console.log(
-    `✓ Verified ${tables.length} tables:`,
-    tables.map((t) => t.name).join(', ')
-  )
+  console.log(`✓ Verified ${tables.length} tables:`, tables.map(t => t.name).join(', '))
 
   db.close()
   console.log('\n✅ Database initialized successfully!')
